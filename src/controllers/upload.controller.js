@@ -1,11 +1,6 @@
-import { randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 
-const uploadDir = path.resolve(process.cwd(), 'public/uploads');
 const mimeExtensions = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -24,16 +19,13 @@ export const uploadImage = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'image upload is too large');
   }
 
-  await mkdir(uploadDir, { recursive: true });
-  const filename = `${Date.now()}-${randomUUID()}.${extension}`;
-  await writeFile(path.join(uploadDir, filename), buffer);
-
   res.json({
     success: true,
     data: {
       image: {
-        url: `/uploads/${filename}`,
+        base64,
         mimeType: mimeType ?? 'image/jpeg',
+        extension,
       },
     },
   });

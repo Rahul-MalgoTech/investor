@@ -646,7 +646,7 @@ function bindUploadToInput(fileInput, targetInput) {
       if (!file) return;
       setStatus('Uploading image');
       const image = await uploadFile(file);
-      targetInput.value = image.url;
+      targetInput.value = imageValue(image);
       setStatus('Image uploaded. Save changes to publish.');
     } catch (error) {
       setStatus(error.message || 'Image upload failed');
@@ -670,15 +670,15 @@ function fileToImage(file) {
     return new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () => {
-        const maxSize = 1800;
+        const maxSize = 1200;
         const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(image.width * scale));
         canvas.height = Math.max(1, Math.round(image.height * scale));
         const context = canvas.getContext('2d');
         context.drawImage(image, 0, 0, canvas.width, canvas.height);
-        const mimeType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-        const quality = mimeType === 'image/jpeg' ? 0.82 : undefined;
+        const mimeType = 'image/jpeg';
+        const quality = 0.78;
         const dataUrl = canvas.toDataURL(mimeType, quality);
         const [, data] = dataUrl.split(',');
         resolve({ base64: data, mimeType });
@@ -723,6 +723,9 @@ function showPage(page) {
 
 function preview(img, image) {
   const src = imageSrc(image);
+  img.onerror = () => {
+    img.hidden = true;
+  };
   img.src = src || '';
   img.hidden = !src;
 }
@@ -744,12 +747,20 @@ function absoluteUrl(url) {
 }
 
 function imageValue(image) {
+  if (image?.base64) {
+    return `data:${image.mimeType || 'image/png'};base64,${image.base64}`;
+  }
   return image?.url || image?.asset || '';
 }
 
 function imageFromValue(rawValue) {
   const value = rawValue.trim();
   if (!value) return {};
+  if (value.startsWith('data:')) {
+    const [meta, base64] = value.split(',');
+    const mimeType = meta.match(/^data:([^;]+)/)?.[1] || 'image/png';
+    return { base64, mimeType };
+  }
   if (value.startsWith('/') || value.startsWith('http')) return { url: value };
   return { asset: value };
 }
