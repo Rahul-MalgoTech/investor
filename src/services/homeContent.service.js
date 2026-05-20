@@ -14,7 +14,9 @@ export async function getHomeContent({ includeInactive = false } = {}) {
     labels: json.labels ?? defaults.labels,
     plotDetail: json.plotDetail ?? defaults.plotDetail,
     cities: sort(filterActive(json.cities, includeInactive)),
-    plots: sort(filterActive(json.plots, includeInactive)).map((plot) => ({
+    plots: sort(
+      filterActive(withDefaultPlots(json.plots, defaults.plots), includeInactive),
+    ).map((plot) => ({
       ...plot,
       detail: plot.detail ?? json.plotDetail ?? defaults.plotDetail,
     })),
@@ -34,4 +36,14 @@ function filterActive(items, includeInactive) {
 
 function sort(items) {
   return [...items].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}
+
+function withDefaultPlots(plots = [], defaultPlots = []) {
+  if (plots.length >= defaultPlots.length) {
+    return plots;
+  }
+
+  const existingIds = new Set(plots.map((plot) => plot.id));
+  const missingDefaults = defaultPlots.filter((plot) => !existingIds.has(plot.id));
+  return [...plots, ...missingDefaults].slice(0, defaultPlots.length);
 }
