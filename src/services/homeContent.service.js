@@ -16,10 +16,9 @@ export async function getHomeContent({ includeInactive = false } = {}) {
     cities: sort(filterActive(json.cities, includeInactive)),
     plots: sort(
       filterActive(withDefaultPlots(json.plots, defaults.plots), includeInactive),
-    ).map((plot) => ({
-      ...plot,
-      detail: plot.detail ?? json.plotDetail ?? defaults.plotDetail,
-    })),
+    ).map((plot) =>
+      withCurrentPlotDetail(plot, json.plotDetail ?? defaults.plotDetail),
+    ),
   };
 }
 
@@ -46,4 +45,20 @@ function withDefaultPlots(plots = [], defaultPlots = []) {
   const existingIds = new Set(plots.map((plot) => plot.id));
   const missingDefaults = defaultPlots.filter((plot) => !existingIds.has(plot.id));
   return [...plots, ...missingDefaults].slice(0, defaultPlots.length);
+}
+
+function withCurrentPlotDetail(plot, sharedDetail) {
+  const plotDetail = plot.detail ?? {};
+  return {
+    ...plot,
+    detail: {
+      ...sharedDetail,
+      title: plot.title ?? sharedDetail.title,
+      location: plot.place ?? sharedDetail.location,
+      plotCount: plot.plotCount ?? sharedDetail.plotCount,
+      priceRange: plot.priceRange ?? sharedDetail.priceRange,
+      heroImage: plotDetail.heroImage ?? sharedDetail.heroImage,
+      thumbnails: plotDetail.thumbnails ?? sharedDetail.thumbnails,
+    },
+  };
 }
