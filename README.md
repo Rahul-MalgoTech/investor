@@ -29,25 +29,25 @@ Phone OTP uses `PHONE_DUMMY_OTP` for now. Email OTP uses SMTP through Nodemailer
 ## Request Examples
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/phone/request-otp \
+curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/phone/request-otp \
   -H "Content-Type: application/json" \
   -d '{"countryCode":"+91","phoneNumber":"9876543210"}'
 ```
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/phone/verify-otp \
+curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/phone/verify-otp \
   -H "Content-Type: application/json" \
   -d '{"countryCode":"+91","phoneNumber":"9876543210","otp":"123456"}'
 ```
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/email/request-otp \
+curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/email/request-otp \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com"}'
 ```
 
 ```bash
-curl -X POST http://localhost:5001/api/v1/auth/google \
+curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/google \
   -H "Content-Type: application/json" \
   -d '{"idToken":"GOOGLE_ID_TOKEN_FROM_APP"}'
 ```

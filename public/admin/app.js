@@ -1,7 +1,7 @@
 const apiBase =
   window.location.pathname.startsWith('/admin') && window.location.origin
     ? ''
-    : 'http://127.0.0.1:5001';
+    : 'https://investor-backend-d42s.onrender.com';
 const apiPath = `${apiBase}/api/v1/admin/home-content`;
 const uploadPath = `${apiBase}/api/v1/admin/uploads`;
 
