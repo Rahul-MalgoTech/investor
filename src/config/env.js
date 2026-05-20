@@ -1,0 +1,48 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+function required(name, fallback) {
+  const value = process.env[name] ?? fallback;
+  if (value === undefined || value === '') {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+function asBoolean(value) {
+  return String(value).toLowerCase() === 'true';
+}
+
+function asNumber(name, fallback) {
+  const value = Number(process.env[name] ?? fallback);
+  if (Number.isNaN(value)) {
+    throw new Error(`Environment variable ${name} must be a number`);
+  }
+  return value;
+}
+
+export const env = {
+  nodeEnv: process.env.NODE_ENV ?? 'development',
+  port: asNumber('PORT', 5002),
+  mongoUri: required('MONGO_URI', 'mongodb://127.0.0.1:27017/investor'),
+  corsOrigins: (process.env.CORS_ORIGIN ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+  jwtSecret: required('JWT_SECRET', 'dev_only_change_me'),
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+  otpTtlMinutes: asNumber('OTP_TTL_MINUTES', 10),
+  otpLength: asNumber('OTP_LENGTH', 6),
+  phoneDummyOtp: process.env.PHONE_DUMMY_OTP ?? '123456',
+  adminToken: process.env.ADMIN_TOKEN,
+  smtp: {
+    host: process.env.SMTP_HOST ?? process.env.EMAIL_HOST,
+    port: asNumber('SMTP_PORT', 587),
+    secure: asBoolean(process.env.SMTP_SECURE ?? false),
+    user: process.env.SMTP_USER ?? process.env.EMAIL_USER,
+    pass: (process.env.SMTP_PASS ?? process.env.EMAIL_PASS)?.replaceAll(' ', ''),
+    from: process.env.SMTP_FROM ?? process.env.EMAIL_FROM ?? 'Investor <no-reply@investor.local>',
+  },
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+};

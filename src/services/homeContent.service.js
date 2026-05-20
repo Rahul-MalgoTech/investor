@@ -1,0 +1,37 @@
+import {
+  defaultHomeContent,
+  findOrCreateHomeContent,
+  replaceHomeContent,
+} from '../repositories/homeContent.repository.js';
+
+export async function getHomeContent({ includeInactive = false } = {}) {
+  const content = await findOrCreateHomeContent();
+  const defaults = defaultHomeContent();
+  const json = content.toJSON();
+  return {
+    ...json,
+    banner: json.banner ?? defaults.banner,
+    labels: json.labels ?? defaults.labels,
+    plotDetail: json.plotDetail ?? defaults.plotDetail,
+    cities: sort(filterActive(json.cities, includeInactive)),
+    plots: sort(filterActive(json.plots, includeInactive)).map((plot) => ({
+      ...plot,
+      detail: plot.detail ?? json.plotDetail ?? defaults.plotDetail,
+    })),
+  };
+}
+
+export async function saveHomeContent(content) {
+  return replaceHomeContent(content);
+}
+
+function filterActive(items, includeInactive) {
+  if (includeInactive) {
+    return items;
+  }
+  return items.filter((item) => item.isActive !== false);
+}
+
+function sort(items) {
+  return [...items].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+}

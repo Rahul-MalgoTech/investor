@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Investor Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Investor Admin</p>
+        <h1>Home Content</h1>
+      </div>
+      <div class="actions">
+        <span id="status" class="status">Loading</span>
+        <button id="tokenBtn" type="button" class="secondary">Admin token</button>
+        <button id="reloadBtn" type="button" class="secondary">Reload</button>
+        <button id="saveBtn" type="button">Save changes</button>
+      </div>
+    </header>
+
+    <div class="admin-shell">
+      <aside class="sidebar">
+        <button type="button" class="nav-item active" data-nav="home">Home Banner</button>
+        <button type="button" class="nav-item" data-nav="cities">Cities</button>
+        <button type="button" class="nav-item" data-nav="details">Plot Detail</button>
+      </aside>
+
+      <main>
+      <section data-page="home">
+        <div class="section-head">
+          <div>
+            <h2>Banner</h2>
+            <p>Hero banner text and image shown above city selector.</p>
+          </div>
+        </div>
+        <article class="card wide-card">
+          <label>Headline <textarea id="bannerHeadline" rows="3"></textarea></label>
+          <label>Subtitle <input id="bannerSubtitle" /></label>
+          <label>Banner image <input id="bannerImage" type="file" accept="image/*" /></label>
+          <img id="bannerPreview" alt="" class="preview wide" />
+        </article>
+      </section>
+
+      <section data-page="home">
+        <div class="section-head">
+          <div>
+            <h2>Labels</h2>
+            <p>Section and tab titles used by the app home screen.</p>
+          </div>
+        </div>
+        <article class="card labels-card">
+          <label>City title <input id="cityTitle" /></label>
+          <label>Recommendation title <input id="recommendationTitle" /></label>
+          <label>Active tab title <input id="activeTabTitle" /></label>
+          <label>Upcoming tab title <input id="upcomingTabTitle" /></label>
+        </article>
+      </section>
+
+      <section data-page="cities" hidden>
+        <div class="section-head">
+          <div>
+            <h2>Select City</h2>
+            <p>These cards appear in the horizontal city selector.</p>
+          </div>
+          <button id="addCityBtn" type="button" class="secondary">Add city</button>
+        </div>
+        <div id="cities" class="grid"></div>
+      </section>
+
+      <section data-page="details" hidden>
+        <div class="section-head">
+          <div>
+            <h2>Plot Detail Page</h2>
+            <p>Edit the home plot cards and the single app detail page. Every home card opens this detail screen.</p>
+          </div>
+        </div>
+
+        <div class="section-head compact">
+          <div>
+            <h2>Home Plot Cards</h2>
+            <p>Only for home screen cards: image, plot name, price, location, count, and Active/Upcoming status. Tapping any card opens the full detail below.</p>
+          </div>
+          <button id="addPlotBtn" type="button" class="secondary">Add plot card</button>
+        </div>
+        <div id="plots" class="grid two"></div>
+
+        <div class="section-head compact">
+          <div>
+            <h2>Full Detail Content</h2>
+            <p>This is the single detail page shown after a user taps any home plot card.</p>
+          </div>
+        </div>
+
+        <article class="card labels-card">
+          <label>Title <input id="detailTitle" /></label>
+          <label>Size <input id="detailSize" /></label>
+          <label>Location <input id="detailLocation" /></label>
+          <label>Plot count <input id="detailPlotCount" /></label>
+          <label>Price range <input id="detailPriceRange" /></label>
+          <label>Edition <input id="detailEdition" /></label>
+        </article>
+
+        <article class="card labels-card">
+          <label>Hero image URL/asset <input id="detailHeroImage" /></label>
+          <label>Upload hero image <input id="detailHeroUpload" type="file" accept="image/*" /></label>
+          <label>Thumb 1 URL/asset <input id="detailThumb1" /></label>
+          <label>Thumb 2 URL/asset <input id="detailThumb2" /></label>
+          <label>Thumb 3 URL/asset <input id="detailThumb3" /></label>
+          <label>Thumb 4 URL/asset <input id="detailThumb4" /></label>
+        </article>
+
+        <article class="card labels-card">
+          <label>Selection title <input id="selectionTitle" /></label>
+          <label>Selection image URL/asset <input id="selectionImage" /></label>
+          <label>Upload selection image <input id="selectionUpload" type="file" accept="image/*" /></label>
+          <label>Total amount <input id="selectionTotalAmount" /></label>
+          <label>Unlock copy <textarea id="selectionUnlockCopy" rows="3"></textarea></label>
+          <label>Selected count <input id="selectionSelectedCount" /></label>
+          <label>Button text <input id="selectionButtonText" /></label>
+          <label>Plot map title <input id="selectionMapTitle" /></label>
+          <label>Plot map data <textarea id="selectionPlots" rows="8" placeholder="label|size|direction|available&#10;2|101 sq yd|N|selected&#10;3|101 sq yd|N|sold"></textarea></label>
+        </article>
+
+        <article class="card labels-card">
+          <label>Summary image URL/asset <input id="summaryImage" /></label>
+          <label>Upload summary image <input id="summaryUpload" type="file" accept="image/*" /></label>
+          <label>Selected label <input id="summarySelectedLabel" placeholder="10 Selected" /></label>
+          <label>Selected plots list <textarea id="summaryPremiumPlots" rows="4" placeholder="One plot per line"></textarea></label>
+          <label>Extra plots list <textarea id="summaryStandardPlots" rows="4" placeholder="Optional, one plot per line"></textarea></label>
+          <label>Agreement copy <textarea id="summaryAgreementCopy" rows="3"></textarea></label>
+          <label>Payment rules title <input id="summaryPaymentRulesTitle" /></label>
+          <label>Payment rules <textarea id="summaryPaymentRules" rows="6" placeholder="success|All plots are verified&#10;warning|Late fee applies"></textarea></label>
+          <label>Documentation title <input id="summaryDocumentationTitle" /></label>
+          <label>Registration title <input id="summaryRegistrationTitle" /></label>
+          <label>Payment breakdown title <input id="summaryPaymentBreakdownTitle" /></label>
+          <label>Total label <input id="summaryTotalLabel" /></label>
+          <label>Selected plots amount <input id="summaryPremiumAmount" /></label>
+          <label>Extra plots amount <input id="summaryStandardAmount" /></label>
+          <label>Total amount <input id="summaryTotalAmount" /></label>
+          <label>EMI button text <input id="summaryEmiButtonText" /></label>
+          <label>Full button text <input id="summaryFullButtonText" /></label>
+        </article>
+
+        <article class="card labels-card">
+          <label>Map image URL/asset <input id="aboutMapImage" /></label>
+          <label>Upload map image <input id="aboutMapUpload" type="file" accept="image/*" /></label>
+          <label>Info image URL/asset <input id="aboutCardImage" /></label>
+          <label>Upload info image <input id="aboutCardUpload" type="file" accept="image/*" /></label>
+          <label>Info 1 label <input id="info1Label" /></label>
+          <label>Info 1 value <input id="info1Value" /></label>
+          <label>Info 2 label <input id="info2Label" /></label>
+          <label>Info 2 value <input id="info2Value" /></label>
+          <label>Info 3 label <input id="info3Label" /></label>
+          <label>Info 3 value <input id="info3Value" /></label>
+          <label>Info 4 label <input id="info4Label" /></label>
+          <label>Info 4 value <input id="info4Value" /></label>
+          <label>Amenities title <input id="amenitiesTitle" /></label>
+          <label>Amenity 1 <input id="amenity1" /></label>
+          <label>Amenity 2 <input id="amenity2" /></label>
+          <label>Amenity 3 <input id="amenity3" /></label>
+          <label>Amenity 4 <input id="amenity4" /></label>
+          <label>Highlights title <input id="highlightsTitle" /></label>
+        </article>
+
+        <div class="section-head compact">
+          <h2>Location Highlights</h2>
+          <button id="addHighlightBtn" type="button" class="secondary">Add highlight</button>
+        </div>
+        <div id="highlights" class="grid two"></div>
+
+        <div class="section-head compact">
+          <h2>Documents</h2>
+          <button id="addDocumentBtn" type="button" class="secondary">Add document</button>
+        </div>
+        <article class="card wide-card">
+          <label>Documents title <input id="documentsTitle" /></label>
+        </article>
+        <div id="documents" class="grid two"></div>
+
+        <div class="section-head compact">
+          <h2>Nearby Plots</h2>
+          <button id="addNearbyBtn" type="button" class="secondary">Add nearby</button>
+        </div>
+        <article class="card wide-card">
+          <label>Nearby title <input id="nearbyTitle" /></label>
+        </article>
+        <div id="nearby" class="grid two"></div>
+      </section>
+      </main>
+    </div>
+
+    <template id="cityTemplate">
+      <article class="card" data-kind="city">
+        <div class="card-head">
+          <strong>City</strong>
+          <button type="button" class="text danger" data-remove>Remove</button>
+        </div>
+        <label>Label <input data-field="label" placeholder="Delhi" /></label>
+        <label>Sort order <input data-field="sortOrder" type="number" min="0" /></label>
+        <label class="row"><input data-field="isActive" type="checkbox" /> Active</label>
+        <label>Image <input data-field="image" type="file" accept="image/*" /></label>
+        <span data-image-state class="image-state"></span>
+        <img data-preview alt="" class="preview" />
+      </article>
+    </template>
+
+    <template id="plotTemplate">
+      <article class="card" data-kind="plot">
+        <div class="card-head">
+          <strong data-title>Plot</strong>
+          <button type="button" class="text danger" data-remove>Remove</button>
+        </div>
+        <label>Title <input data-field="title" placeholder="Enter plot title" /></label>
+        <label>Place <input data-field="place" placeholder="Enter place" /></label>
+        <label>Price range <input data-field="priceRange" placeholder="Enter price range" /></label>
+        <label>Plot count <input data-field="plotCount" placeholder="Enter plot count" /></label>
+        <label>City id <input data-field="cityId" placeholder="delhi" /></label>
+        <label>Status
+          <select data-field="status">
+            <option value="active">Active Releases</option>
+            <option value="upcoming">Upcoming</option>
+          </select>
+        </label>
+        <label>Sort order <input data-field="sortOrder" type="number" min="0" /></label>
+        <label class="row"><input data-field="isActive" type="checkbox" /> Active</label>
+        <label>Main image <input data-field="image" type="file" accept="image/*" /></label>
+        <span data-image-state="image" class="image-state"></span>
+        <img data-preview="image" alt="" class="preview wide" />
+        <label>Icon image <input data-field="iconImage" type="file" accept="image/*" /></label>
+        <span data-image-state="iconImage" class="image-state"></span>
+        <img data-preview="iconImage" alt="" class="preview" />
+        <label>Detail big image URL/asset <input data-field="detailHeroImage" /></label>
+        <label>Upload detail big image <input data-field="detailHeroUpload" type="file" accept="image/*" /></label>
+        <label>Detail sub image 1 URL/asset <input data-field="detailThumb1" /></label>
+        <label>Upload sub image 1 <input data-field="detailThumb1Upload" type="file" accept="image/*" /></label>
+        <label>Detail sub image 2 URL/asset <input data-field="detailThumb2" /></label>
+        <label>Upload sub image 2 <input data-field="detailThumb2Upload" type="file" accept="image/*" /></label>
+        <label>Detail sub image 3 URL/asset <input data-field="detailThumb3" /></label>
+        <label>Upload sub image 3 <input data-field="detailThumb3Upload" type="file" accept="image/*" /></label>
+        <label>Detail sub image 4 URL/asset <input data-field="detailThumb4" /></label>
+        <label>Upload sub image 4 <input data-field="detailThumb4Upload" type="file" accept="image/*" /></label>
+      </article>
+    </template>
+
+    <template id="highlightTemplate">
+      <article class="card" data-kind="highlight">
+        <div class="card-head">
+          <strong>Highlight</strong>
+          <button type="button" class="text danger" data-remove>Remove</button>
+        </div>
+        <label>Title <input data-field="title" /></label>
+        <label>Distance <input data-field="distance" /></label>
+        <label>Image URL/asset <input data-field="imageValue" /></label>
+        <label>Upload image <input data-field="imageUpload" type="file" accept="image/*" /></label>
+      </article>
+    </template>
+
+    <template id="documentTemplate">
+      <article class="card" data-kind="document">
+        <div class="card-head">
+          <strong>Document</strong>
+          <button type="button" class="text danger" data-remove>Remove</button>
+        </div>
+        <label>Title <input data-field="title" /></label>
+        <label>Size <input data-field="size" /></label>
+      </article>
+    </template>
+
+    <template id="nearbyTemplate">
+      <article class="card" data-kind="nearby">
+        <div class="card-head">
+          <strong>Nearby plot</strong>
+          <button type="button" class="text danger" data-remove>Remove</button>
+        </div>
+        <label>Title <input data-field="title" /></label>
+        <label>Place <input data-field="place" /></label>
+        <label>Plot count <input data-field="plotCount" /></label>
+        <label>Price range <input data-field="priceRange" /></label>
+        <label>Image URL/asset <input data-field="imageValue" /></label>
+        <label>Upload image <input data-field="imageUpload" type="file" accept="image/*" /></label>
+      </article>
+    </template>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
