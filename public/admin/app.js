@@ -705,11 +705,23 @@ async function uploadFile(file) {
     headers: adminHeaders({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(image),
   });
-  const json = await response.json();
+  const json = await readJsonResponse(response);
   if (!response.ok || json.success === false) {
     throw new Error(json.message || 'Image upload failed');
   }
   return json.data.image;
+}
+
+async function readJsonResponse(response) {
+  const text = await response.text();
+  try {
+    return text ? JSON.parse(text) : {};
+  } catch (_) {
+    return {
+      success: false,
+      message: text || `Request failed with ${response.status}`,
+    };
+  }
 }
 
 function showPage(page) {
