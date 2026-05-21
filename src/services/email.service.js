@@ -8,21 +8,48 @@ export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
 }
 
+function isGmailSmtp() {
+  const host = String(env.smtp.host ?? '').trim().toLowerCase();
+  return host === 'gmail' || host === 'smtp.gmail.com';
+}
+
+function getSenderAddress() {
+  const from = String(env.smtp.from ?? '').trim();
+  if (!from || from.includes('investor.local')) {
+    return env.smtp.user;
+  }
+  return from;
+}
+
 function createTransporter() {
   if (!hasSmtpConfig()) {
     throw new ApiError(500, 'SMTP is not configured');
   }
 
-  return nodemailer.createTransport({
-    host: env.smtp.host,
-    port: env.smtp.port,
-    secure: env.smtp.secure,
+  const baseOptions = {
     connectionTimeout: 8000,
     greetingTimeout: 8000,
     socketTimeout: 10000,
     auth: {
       user: env.smtp.user,
       pass: env.smtp.pass,
+    },
+  };
+
+  if (isGmailSmtp()) {
+    return nodemailer.createTransport({
+      ...baseOptions,
+      service: 'gmail',
+    });
+  }
+
+  return nodemailer.createTransport({
+    ...baseOptions,
+    host: env.smtp.host,
+    port: env.smtp.port,
+    secure: env.smtp.secure,
+    tls: {
+      servername: env.smtp.host,
     },
   });
 }
@@ -32,7 +59,7 @@ export async function sendEmailOtp({ to, otp }) {
 
   try {
     await transporter.sendMail({
-      from: env.smtp.from,
+      from: getSenderAddress(),
       to,
       subject: 'Your Investor login OTP',
       text: `Your Investor OTP is ${otp}. It expires in ${env.otpTtlMinutes} minutes.`,
@@ -46,7 +73,13 @@ export async function sendEmailOtp({ to, otp }) {
       `,
     });
   } catch (error) {
-    logger.error('Failed to send email OTP', error);
+    logger.error('Failed to send email OTP', {
+      code: error?.code,
+      command: error?.command,
+      response: error?.response,
+      responseCode: error?.responseCode,
+      message: error?.message,
+    });
     throw new ApiError(503, 'Email OTP service is temporarily unavailable');
   }
 }
