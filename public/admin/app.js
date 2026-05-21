@@ -217,7 +217,7 @@ async function save() {
 
 async function checkSmtp() {
   try {
-    setStatus('Checking SMTP');
+    setStatus('Checking email');
     const response = await fetch(smtpPath, { headers: adminHeaders() });
     const json = await readJsonResponse(response);
     if (!response.ok || json.success === false) {
@@ -227,15 +227,15 @@ async function checkSmtp() {
 
     const result = json.data || {};
     if (result.ok) {
-      setStatus(`SMTP OK: ${result.user || 'configured user'}`);
+      setStatus(`Email OK: ${result.provider || result.transport || 'configured'}`);
       return;
     }
 
     const error = result.error || {};
-    const message = error.response || error.message || error.code || 'SMTP failed';
-    setStatus(`SMTP failed: ${message}`);
+    const message = error.response || error.message || error.code || 'Email check failed';
+    setStatus(`Email failed: ${message}`);
   } catch (error) {
-    setStatus(error.message || 'SMTP check failed');
+    setStatus(error.message || 'Email check failed');
   }
 }
 

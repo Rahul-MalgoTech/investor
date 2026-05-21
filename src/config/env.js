@@ -34,6 +34,11 @@ const smtpFrom =
   process.env.SMTP_FROM ??
   process.env.EMAIL_FROM ??
   (smtpUser ? `Investor <${smtpUser}>` : 'Investor <no-reply@investor.local>');
+const emailFrom =
+  process.env.RESEND_FROM ??
+  process.env.EMAIL_FROM ??
+  process.env.SMTP_FROM ??
+  (smtpUser ? `Investor <${smtpUser}>` : 'Investor <no-reply@investor.local>');
 
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
@@ -58,6 +63,10 @@ export const env = {
     user: smtpUser,
     pass: smtpPass?.replaceAll(' ', ''),
     from: smtpFrom,
+  },
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: emailFrom,
   },
   googleClientId: process.env.GOOGLE_CLIENT_ID,
 };

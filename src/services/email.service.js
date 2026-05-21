@@ -10,8 +10,14 @@ dns.setDefaultResultOrder?.('ipv4first');
 let cachedGmailIpv4s;
 let cachedWorkingTransportLabel;
 
+const resendApiUrl = 'https://api.resend.com/emails';
+
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
+}
+
+export function hasEmailDeliveryConfig() {
+  return Boolean(env.email.resendApiKey || hasSmtpConfig());
 }
 
 function isGmailSmtp() {
@@ -20,7 +26,7 @@ function isGmailSmtp() {
 }
 
 function getSenderAddress() {
-  const from = String(env.smtp.from ?? '').trim();
+  const from = String(env.email.from ?? env.smtp.from ?? '').trim();
   if (!from || from.includes('investor.local')) {
     return env.smtp.user;
   }
@@ -141,7 +147,63 @@ function rememberWorkingTransport(label) {
   cachedWorkingTransportLabel = label;
 }
 
-export async function checkSmtpConnection() {
+function otpEmailPayload({ to, otp }) {
+  return {
+    from: getSenderAddress(),
+    to,
+    subject: 'Your Investor login OTP',
+    text: `Your Investor OTP is ${otp}. It expires in ${env.otpTtlMinutes} minutes.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2>Investor login OTP</h2>
+        <p>Your OTP is:</p>
+        <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
+        <p>This OTP expires in ${env.otpTtlMinutes} minutes.</p>
+      </div>
+    `,
+  };
+}
+
+async function sendWithResend(payload) {
+  const response = await fetch(resendApiUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.email.resendApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(12000),
+  });
+  const text = await response.text();
+  const body = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    logger.error('Failed to send email OTP with Resend', {
+      status: response.status,
+      body,
+    });
+    throw new ApiError(
+      503,
+      body?.message || 'Email OTP service is temporarily unavailable',
+    );
+  }
+
+  return body;
+}
+
+export async function checkEmailDeliveryConnection() {
+  if (env.email.resendApiKey) {
+    return {
+      ok: true,
+      provider: 'resend',
+      from: getSenderAddress(),
+    };
+  }
+
+  return checkSmtpConnection();
+}
+
+async function checkSmtpConnection() {
   let lastError;
 
   for (const config of await transportConfigs()) {
@@ -173,26 +235,20 @@ export async function checkSmtpConnection() {
 }
 
 export async function sendEmailOtp({ to, otp }) {
+  const payload = otpEmailPayload({ to, otp });
+
+  if (env.email.resendApiKey) {
+    await sendWithResend(payload);
+    return;
+  }
+
   let lastError;
 
   for (const config of await transportConfigs()) {
     const transporter = createTransporter(config.options);
 
     try {
-      await transporter.sendMail({
-        from: getSenderAddress(),
-        to,
-        subject: 'Your Investor login OTP',
-        text: `Your Investor OTP is ${otp}. It expires in ${env.otpTtlMinutes} minutes.`,
-        html: `
-          <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-            <h2>Investor login OTP</h2>
-            <p>Your OTP is:</p>
-            <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
-            <p>This OTP expires in ${env.otpTtlMinutes} minutes.</p>
-          </div>
-        `,
-      });
+      await transporter.sendMail(payload);
       rememberWorkingTransport(config.label);
       return;
     } catch (error) {
