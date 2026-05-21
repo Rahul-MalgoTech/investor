@@ -7,7 +7,8 @@ import { logger } from '../utils/logger.js';
 
 dns.setDefaultResultOrder?.('ipv4first');
 
-let cachedGmailIpv4;
+let cachedGmailIpv4s;
+let cachedWorkingTransportLabel;
 
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
@@ -30,9 +31,9 @@ function lookupIpv4(hostname, options, callback) {
   dns.lookup(hostname, { ...options, family: 4 }, callback);
 }
 
-async function resolveGmailIpv4() {
-  if (cachedGmailIpv4) {
-    return cachedGmailIpv4;
+async function resolveGmailIpv4s() {
+  if (cachedGmailIpv4s?.length) {
+    return cachedGmailIpv4s;
   }
 
   const addresses = await dns.promises.resolve4('smtp.gmail.com');
@@ -40,8 +41,8 @@ async function resolveGmailIpv4() {
     throw new Error('No IPv4 address found for smtp.gmail.com');
   }
 
-  cachedGmailIpv4 = addresses[0];
-  return cachedGmailIpv4;
+  cachedGmailIpv4s = addresses;
+  return cachedGmailIpv4s;
 }
 
 function baseTransportOptions() {
@@ -50,10 +51,10 @@ function baseTransportOptions() {
   }
 
   return {
-    connectionTimeout: 8000,
-    greetingTimeout: 8000,
-    socketTimeout: 10000,
-    dnsTimeout: 8000,
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
+    dnsTimeout: 10000,
     family: 4,
     lookup: lookupIpv4,
     auth: {
@@ -66,7 +67,7 @@ function baseTransportOptions() {
 async function transportConfigs() {
   const baseOptions = baseTransportOptions();
   if (isGmailSmtp()) {
-    const gmailIpv4 = await resolveGmailIpv4();
+    const gmailIpv4s = await resolveGmailIpv4s();
     const preferred = {
       port: env.smtp.port,
       secure: env.smtp.secure,
@@ -75,20 +76,35 @@ async function transportConfigs() {
       ? { port: 465, secure: true }
       : { port: 587, secure: false };
 
-    return [preferred, fallback].map((config) => ({
-      label: `gmail:${config.port}/${gmailIpv4}`,
-      options: {
-        ...baseOptions,
-        host: gmailIpv4,
-        port: config.port,
-        secure: config.secure,
-        requireTLS: config.port === 587,
-        name: 'smtp.gmail.com',
-        tls: {
-          servername: 'smtp.gmail.com',
-        },
-      },
-    }));
+    const configs = [];
+    for (const gmailIpv4 of gmailIpv4s) {
+      for (const config of [preferred, fallback]) {
+        configs.push({
+          label: `gmail:${config.port}/${gmailIpv4}`,
+          options: {
+            ...baseOptions,
+            host: gmailIpv4,
+            port: config.port,
+            secure: config.secure,
+            requireTLS: config.port === 587,
+            name: 'smtp.gmail.com',
+            tls: {
+              servername: 'smtp.gmail.com',
+            },
+          },
+        });
+      }
+    }
+
+    if (cachedWorkingTransportLabel) {
+      configs.sort((a, b) => {
+        if (a.label === cachedWorkingTransportLabel) return -1;
+        if (b.label === cachedWorkingTransportLabel) return 1;
+        return 0;
+      });
+    }
+
+    return configs;
   }
 
   return [
@@ -121,6 +137,10 @@ function serializeSmtpError(error) {
   };
 }
 
+function rememberWorkingTransport(label) {
+  cachedWorkingTransportLabel = label;
+}
+
 export async function checkSmtpConnection() {
   let lastError;
 
@@ -129,6 +149,7 @@ export async function checkSmtpConnection() {
 
     try {
       await transporter.verify();
+      rememberWorkingTransport(config.label);
       return {
         ok: true,
         host: isGmailSmtp() ? 'gmail' : env.smtp.host,
@@ -172,6 +193,7 @@ export async function sendEmailOtp({ to, otp }) {
           </div>
         `,
       });
+      rememberWorkingTransport(config.label);
       return;
     } catch (error) {
       lastError = error;
