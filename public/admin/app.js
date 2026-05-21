@@ -4,6 +4,7 @@ const apiBase =
     : 'https://investor-backend-d42s.onrender.com';
 const apiPath = `${apiBase}/api/v1/admin/home-content`;
 const uploadPath = `${apiBase}/api/v1/admin/uploads`;
+const smtpPath = `${apiBase}/api/v1/admin/smtp-status`;
 
 let state = { banner: {}, labels: {}, cities: [], plots: [], plotDetail: {} };
 let selectedPlotId = null;
@@ -94,6 +95,7 @@ for (const id of detailFields) {
 
 document.querySelector('#reloadBtn').addEventListener('click', load);
 document.querySelector('#saveBtn').addEventListener('click', save);
+document.querySelector('#smtpBtn').addEventListener('click', checkSmtp);
 document.querySelector('#tokenBtn').addEventListener('click', () => {
   const token = prompt('Admin token', localStorage.getItem('adminToken') || '');
   if (token !== null) localStorage.setItem('adminToken', token.trim());
@@ -210,6 +212,30 @@ async function save() {
     setStatus('Saved');
   } catch (error) {
     setStatus(error.message || 'Save failed');
+  }
+}
+
+async function checkSmtp() {
+  try {
+    setStatus('Checking SMTP');
+    const response = await fetch(smtpPath, { headers: adminHeaders() });
+    const json = await readJsonResponse(response);
+    if (!response.ok || json.success === false) {
+      setStatus(json.message || 'SMTP check failed');
+      return;
+    }
+
+    const result = json.data || {};
+    if (result.ok) {
+      setStatus(`SMTP OK: ${result.user || 'configured user'}`);
+      return;
+    }
+
+    const error = result.error || {};
+    const message = error.response || error.message || error.code || 'SMTP failed';
+    setStatus(`SMTP failed: ${message}`);
+  } catch (error) {
+    setStatus(error.message || 'SMTP check failed');
   }
 }
 
