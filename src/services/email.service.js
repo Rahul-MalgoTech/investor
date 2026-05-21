@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/apiError.js';
+import { logger } from '../utils/logger.js';
 
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
@@ -16,6 +17,9 @@ function createTransporter() {
     host: env.smtp.host,
     port: env.smtp.port,
     secure: env.smtp.secure,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
     auth: {
       user: env.smtp.user,
       pass: env.smtp.pass,
@@ -26,18 +30,23 @@ function createTransporter() {
 export async function sendEmailOtp({ to, otp }) {
   const transporter = createTransporter();
 
-  await transporter.sendMail({
-    from: env.smtp.from,
-    to,
-    subject: 'Your Investor login OTP',
-    text: `Your Investor OTP is ${otp}. It expires in ${env.otpTtlMinutes} minutes.`,
-    html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
-        <h2>Investor login OTP</h2>
-        <p>Your OTP is:</p>
-        <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
-        <p>This OTP expires in ${env.otpTtlMinutes} minutes.</p>
-      </div>
-    `,
-  });
+  try {
+    await transporter.sendMail({
+      from: env.smtp.from,
+      to,
+      subject: 'Your Investor login OTP',
+      text: `Your Investor OTP is ${otp}. It expires in ${env.otpTtlMinutes} minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+          <h2>Investor login OTP</h2>
+          <p>Your OTP is:</p>
+          <p style="font-size: 28px; font-weight: 700; letter-spacing: 4px;">${otp}</p>
+          <p>This OTP expires in ${env.otpTtlMinutes} minutes.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    logger.error('Failed to send email OTP', error);
+    throw new ApiError(503, 'Email OTP service is temporarily unavailable');
+  }
 }
