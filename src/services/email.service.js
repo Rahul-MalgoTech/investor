@@ -1,8 +1,11 @@
+import dns from 'node:dns';
 import nodemailer from 'nodemailer';
 
 import { env } from '../config/env.js';
 import { ApiError } from '../utils/apiError.js';
 import { logger } from '../utils/logger.js';
+
+dns.setDefaultResultOrder?.('ipv4first');
 
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
@@ -30,6 +33,8 @@ function createTransporter() {
     connectionTimeout: 8000,
     greetingTimeout: 8000,
     socketTimeout: 10000,
+    dnsTimeout: 8000,
+    family: 4,
     auth: {
       user: env.smtp.user,
       pass: env.smtp.pass,
@@ -39,7 +44,12 @@ function createTransporter() {
   if (isGmailSmtp()) {
     return nodemailer.createTransport({
       ...baseOptions,
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: env.smtp.port,
+      secure: env.smtp.secure,
+      tls: {
+        servername: 'smtp.gmail.com',
+      },
     });
   }
 
