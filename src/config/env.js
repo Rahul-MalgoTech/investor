@@ -22,6 +22,19 @@ function asNumber(name, fallback) {
   return value;
 }
 
+const gmailUser = process.env.GMAIL_USER;
+const gmailPass = process.env.GMAIL_PASS;
+const smtpHost =
+  process.env.SMTP_HOST ??
+  process.env.EMAIL_HOST ??
+  (gmailUser || gmailPass ? 'smtp.gmail.com' : undefined);
+const smtpUser = process.env.SMTP_USER ?? process.env.EMAIL_USER ?? gmailUser;
+const smtpPass = process.env.SMTP_PASS ?? process.env.EMAIL_PASS ?? gmailPass;
+const smtpFrom =
+  process.env.SMTP_FROM ??
+  process.env.EMAIL_FROM ??
+  (smtpUser ? `Investor <${smtpUser}>` : 'Investor <no-reply@investor.local>');
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: asNumber('PORT', 5002),
@@ -37,12 +50,14 @@ export const env = {
   phoneDummyOtp: process.env.PHONE_DUMMY_OTP ?? '123456',
   adminToken: process.env.ADMIN_TOKEN,
   smtp: {
-    host: process.env.SMTP_HOST ?? process.env.EMAIL_HOST,
-    port: asNumber('SMTP_PORT', 587),
-    secure: asBoolean(process.env.SMTP_SECURE ?? false),
-    user: process.env.SMTP_USER ?? process.env.EMAIL_USER,
-    pass: (process.env.SMTP_PASS ?? process.env.EMAIL_PASS)?.replaceAll(' ', ''),
-    from: process.env.SMTP_FROM ?? process.env.EMAIL_FROM ?? 'Investor <no-reply@investor.local>',
+    host: smtpHost,
+    port: asNumber('SMTP_PORT', smtpHost === 'smtp.gmail.com' ? 465 : 587),
+    secure: asBoolean(
+      process.env.SMTP_SECURE ?? (smtpHost === 'smtp.gmail.com' ? true : false),
+    ),
+    user: smtpUser,
+    pass: smtpPass?.replaceAll(' ', ''),
+    from: smtpFrom,
   },
   googleClientId: process.env.GOOGLE_CLIENT_ID,
 };
