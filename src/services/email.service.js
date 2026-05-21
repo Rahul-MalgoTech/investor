@@ -7,6 +7,8 @@ import { logger } from '../utils/logger.js';
 
 dns.setDefaultResultOrder?.('ipv4first');
 
+let cachedGmailIpv4;
+
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
 }
@@ -28,6 +30,20 @@ function lookupIpv4(hostname, options, callback) {
   dns.lookup(hostname, { ...options, family: 4 }, callback);
 }
 
+async function resolveGmailIpv4() {
+  if (cachedGmailIpv4) {
+    return cachedGmailIpv4;
+  }
+
+  const addresses = await dns.promises.resolve4('smtp.gmail.com');
+  if (!addresses.length) {
+    throw new Error('No IPv4 address found for smtp.gmail.com');
+  }
+
+  cachedGmailIpv4 = addresses[0];
+  return cachedGmailIpv4;
+}
+
 function baseTransportOptions() {
   if (!hasSmtpConfig()) {
     throw new ApiError(500, 'SMTP is not configured');
@@ -47,9 +63,10 @@ function baseTransportOptions() {
   };
 }
 
-function transportConfigs() {
+async function transportConfigs() {
   const baseOptions = baseTransportOptions();
   if (isGmailSmtp()) {
+    const gmailIpv4 = await resolveGmailIpv4();
     const preferred = {
       port: env.smtp.port,
       secure: env.smtp.secure,
@@ -59,13 +76,14 @@ function transportConfigs() {
       : { port: 587, secure: false };
 
     return [preferred, fallback].map((config) => ({
-      label: `gmail:${config.port}`,
+      label: `gmail:${config.port}/${gmailIpv4}`,
       options: {
         ...baseOptions,
-        host: 'smtp.gmail.com',
+        host: gmailIpv4,
         port: config.port,
         secure: config.secure,
         requireTLS: config.port === 587,
+        name: 'smtp.gmail.com',
         tls: {
           servername: 'smtp.gmail.com',
         },
@@ -106,7 +124,7 @@ function serializeSmtpError(error) {
 export async function checkSmtpConnection() {
   let lastError;
 
-  for (const config of transportConfigs()) {
+  for (const config of await transportConfigs()) {
     const transporter = createTransporter(config.options);
 
     try {
@@ -136,7 +154,7 @@ export async function checkSmtpConnection() {
 export async function sendEmailOtp({ to, otp }) {
   let lastError;
 
-  for (const config of transportConfigs()) {
+  for (const config of await transportConfigs()) {
     const transporter = createTransporter(config.options);
 
     try {
