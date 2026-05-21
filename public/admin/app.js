@@ -6,6 +6,7 @@ const apiPath = `${apiBase}/api/v1/admin/home-content`;
 const uploadPath = `${apiBase}/api/v1/admin/uploads`;
 
 let state = { banner: {}, labels: {}, cities: [], plots: [], plotDetail: {} };
+let selectedPlotId = null;
 
 const nodes = {
   status: document.querySelector('#status'),
@@ -114,8 +115,10 @@ document.querySelector('#addCityBtn').addEventListener('click', () => {
 });
 
 document.querySelector('#addPlotBtn').addEventListener('click', () => {
+  syncFromDom();
+  const id = crypto.randomUUID();
   state.plots.push({
-    id: crypto.randomUUID(),
+    id,
     title: '',
     place: '',
     priceRange: '',
@@ -124,14 +127,16 @@ document.querySelector('#addPlotBtn').addEventListener('click', () => {
     status: 'active',
     image: {},
     iconImage: {},
+    detail: clone(detail()),
     sortOrder: state.plots.length,
     isActive: true,
   });
+  selectedPlotId = id;
   render();
 });
 
 document.querySelector('#addHighlightBtn').addEventListener('click', () => {
-  detail().about.highlights.push({
+  activeDetail().about.highlights.push({
     title: 'New highlight',
     distance: '1 km',
     image: {},
@@ -140,12 +145,12 @@ document.querySelector('#addHighlightBtn').addEventListener('click', () => {
 });
 
 document.querySelector('#addDocumentBtn').addEventListener('click', () => {
-  detail().documents.push({ title: 'New Document', size: '1.8MB' });
+  activeDetail().documents.push({ title: 'New Document', size: '1.8MB' });
   renderPlotDetail();
 });
 
 document.querySelector('#addNearbyBtn').addEventListener('click', () => {
-  detail().nearby.push({
+  activeDetail().nearby.push({
     title: 'Sunrise valley',
     place: 'OMR Road',
     plotCount: '12 plots',
@@ -209,6 +214,7 @@ async function save() {
 }
 
 function render() {
+  ensureSelectedPlot();
   nodes.bannerHeadline.value = state.banner?.headline || '';
   nodes.bannerSubtitle.value = state.banner?.subtitle || '';
   nodes.cityTitle.value = state.labels?.cityTitle || '';
@@ -227,7 +233,8 @@ function render() {
 }
 
 function renderPlotDetail() {
-  const plotDetail = detail();
+  const selectedPlot = activePlot();
+  const plotDetail = activeDetail();
   nodes.detailTitle.value = plotDetail.title || '';
   nodes.detailSize.value = plotDetail.size || '';
   nodes.detailLocation.value = plotDetail.location || '';
@@ -289,6 +296,13 @@ function renderPlotDetail() {
   nodes.documentsTitle.value = plotDetail.documentsTitle || '';
   nodes.nearbyTitle.value = plotDetail.nearbyTitle || '';
 
+  const detailHeading = document.querySelector('#detailEditorTitle');
+  if (detailHeading) {
+    detailHeading.textContent = selectedPlot
+      ? `Full Detail Content: ${selectedPlot.title || 'Untitled plot'}`
+      : 'Full Detail Content';
+  }
+
   nodes.highlights.replaceChildren(
     ...plotDetail.about.highlights.map((item, index) =>
       highlightCard(item, index),
@@ -322,6 +336,7 @@ function plotCard(plot) {
   const card = nodes.plotTemplate.content.firstElementChild.cloneNode(true);
   card.dataset.id = plot.id;
   card.querySelector('[data-title]').textContent = 'Recommend plot';
+  card.classList.toggle('is-selected', plot.id === selectedPlotId);
   ['title', 'place', 'priceRange', 'plotCount', 'cityId', 'status', 'sortOrder'].forEach(
     (field) => setValue(card, field, plot[field] ?? ''),
   );
@@ -339,8 +354,20 @@ function plotCard(plot) {
   bindUploadToInput(card.querySelector('[data-field="detailThumb2Upload"]'), card.querySelector('[data-field="detailThumb2"]'));
   bindUploadToInput(card.querySelector('[data-field="detailThumb3Upload"]'), card.querySelector('[data-field="detailThumb3"]'));
   bindUploadToInput(card.querySelector('[data-field="detailThumb4Upload"]'), card.querySelector('[data-field="detailThumb4"]'));
+  card.querySelector('[data-edit-detail]').addEventListener('click', () => {
+    syncFromDom();
+    selectedPlotId = plot.id;
+    render();
+    document.querySelector('#detailEditorTitle')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  });
   bindRemove(card, () => {
     state.plots = state.plots.filter((item) => item.id !== plot.id);
+    if (selectedPlotId === plot.id) {
+      selectedPlotId = null;
+    }
     render();
   });
   preview(card.querySelector('[data-preview="image"]'), plot.image);
@@ -432,7 +459,6 @@ function syncHomeCollections() {
       status: value(card, 'status') === 'upcoming' ? 'upcoming' : 'active',
       detail: {
         ...(existing?.detail || {}),
-        ...detail(),
         title: value(card, 'title'),
         location: value(card, 'place'),
         plotCount: value(card, 'plotCount'),
@@ -452,7 +478,7 @@ function syncHomeCollections() {
 }
 
 function syncPlotDetailFromFields() {
-  const plotDetail = detail();
+  const plotDetail = activeDetail();
   plotDetail.title = nodes.detailTitle.value.trim();
   plotDetail.size = nodes.detailSize.value.trim();
   plotDetail.location = nodes.detailLocation.value.trim();
@@ -567,6 +593,11 @@ function normalizeState() {
   plotDetail.about.highlights ||= [];
   plotDetail.documents ||= [];
   plotDetail.nearby ||= [];
+  state.plots.forEach((plot) => {
+    plot.detail ||= clone(plotDetail);
+    normalizeNestedDetail(plot.detail);
+  });
+  ensureSelectedPlot();
 }
 
 function detail() {
@@ -575,10 +606,36 @@ function detail() {
   return state.plotDetail;
 }
 
+function ensureSelectedPlot() {
+  if (state.plots.some((plot) => plot.id === selectedPlotId)) {
+    return;
+  }
+  selectedPlotId = sortItems(state.plots)[0]?.id || null;
+}
+
+function activePlot() {
+  ensureSelectedPlot();
+  return state.plots.find((plot) => plot.id === selectedPlotId) || null;
+}
+
+function activeDetail() {
+  const plot = activePlot();
+  if (!plot) {
+    return detail();
+  }
+  plot.detail ||= clone(detail());
+  normalizeNestedDetail(plot.detail);
+  return plot.detail;
+}
+
 function detailForPlot(plot) {
   const plotDetail = { ...detail(), ...(plot.detail || {}) };
   normalizeNestedDetail(plotDetail);
   return plotDetail;
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value ?? {}));
 }
 
 function normalizeNestedDetail(plotDetail) {

@@ -16,9 +16,7 @@ export async function getHomeContent({ includeInactive = false } = {}) {
     cities: sort(filterActive(json.cities, includeInactive)),
     plots: sort(
       filterActive(withDefaultPlots(json.plots, defaults.plots), includeInactive),
-    ).map((plot) =>
-      withCurrentPlotDetail(plot, json.plotDetail ?? defaults.plotDetail),
-    ),
+    ).map((plot) => withPlotDetail(plot, defaults.plotDetail)),
   };
 }
 
@@ -47,18 +45,18 @@ function withDefaultPlots(plots = [], defaultPlots = []) {
   return [...plots, ...missingDefaults].slice(0, defaultPlots.length);
 }
 
-function withCurrentPlotDetail(plot, sharedDetail) {
+function withPlotDetail(plot, defaultDetail) {
   const plotDetail = plot.detail ?? {};
   return {
     ...plot,
     detail: {
-      ...sharedDetail,
-      title: plot.title ?? sharedDetail.title,
-      location: plot.place ?? sharedDetail.location,
-      plotCount: plot.plotCount ?? sharedDetail.plotCount,
-      priceRange: plot.priceRange ?? sharedDetail.priceRange,
-      heroImage: plotDetail.heroImage ?? sharedDetail.heroImage,
-      thumbnails: plotDetail.thumbnails ?? sharedDetail.thumbnails,
+      ...defaultDetail,
+      ...plotDetail,
+      title: plotDetail.title ?? plot.title ?? defaultDetail.title,
+      location: plotDetail.location ?? plot.place ?? defaultDetail.location,
+      plotCount: plotDetail.plotCount ?? plot.plotCount ?? defaultDetail.plotCount,
+      priceRange:
+        plotDetail.priceRange ?? plot.priceRange ?? defaultDetail.priceRange,
     },
   };
 }

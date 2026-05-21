@@ -89,6 +89,15 @@ button.danger {
   gap: 12px;
 }
 
+.compact-actions {
+  gap: 10px;
+}
+
+.card.is-selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px rgba(220, 178, 94, .28);
+}
+
 .section-head,
 .card-head {
   justify-content: space-between;

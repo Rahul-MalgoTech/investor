@@ -73,7 +73,7 @@
         <div class="section-head">
           <div>
             <h2>Plot Detail Page</h2>
-            <p>Edit the home plot cards and the single app detail page. Every home card opens this detail screen.</p>
+            <p>Edit each home plot card and its own full detail screen. Use “Edit full detail” on a plot card to switch the editor below.</p>
           </div>
         </div>
 
@@ -88,8 +88,8 @@
 
         <div class="section-head compact">
           <div>
-            <h2>Full Detail Content</h2>
-            <p>This is the single detail page shown after a user taps any home plot card.</p>
+            <h2 id="detailEditorTitle">Full Detail Content</h2>
+            <p>This full detail data belongs only to the selected plot card.</p>
           </div>
         </div>
 
@@ -210,7 +210,10 @@
       <article class="card" data-kind="plot">
         <div class="card-head">
           <strong data-title>Plot</strong>
-          <button type="button" class="text danger" data-remove>Remove</button>
+          <div class="actions compact-actions">
+            <button type="button" class="text" data-edit-detail>Edit full detail</button>
+            <button type="button" class="text danger" data-remove>Remove</button>
+          </div>
         </div>
         <label>Title <input data-field="title" placeholder="Enter plot title" /></label>
         <label>Place <input data-field="place" placeholder="Enter place" /></label>
