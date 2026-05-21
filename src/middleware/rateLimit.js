@@ -2,9 +2,12 @@ import rateLimit from 'express-rate-limit';
 
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 150,
+  limit: 1000,
   skip: (req) =>
-    req.path.startsWith('/admin') || req.path.startsWith('/api/v1/admin'),
+    req.path === '/health' ||
+    req.path === '/api/v1/home-content' ||
+    req.path.startsWith('/admin') ||
+    req.path.startsWith('/api/v1/admin'),
   message: {
     success: false,
     message: 'Too many requests. Please try again later.',
