@@ -54,6 +54,41 @@ function createTransporter() {
   });
 }
 
+export async function checkSmtpConnection() {
+  const transporter = createTransporter();
+
+  try {
+    await transporter.verify();
+    return {
+      ok: true,
+      host: isGmailSmtp() ? 'gmail' : env.smtp.host,
+      user: env.smtp.user,
+      from: getSenderAddress(),
+    };
+  } catch (error) {
+    logger.error('SMTP verification failed', {
+      code: error?.code,
+      command: error?.command,
+      response: error?.response,
+      responseCode: error?.responseCode,
+      message: error?.message,
+    });
+    return {
+      ok: false,
+      host: isGmailSmtp() ? 'gmail' : env.smtp.host,
+      user: env.smtp.user,
+      from: getSenderAddress(),
+      error: {
+        code: error?.code,
+        command: error?.command,
+        response: error?.response,
+        responseCode: error?.responseCode,
+        message: error?.message,
+      },
+    };
+  }
+}
+
 export async function sendEmailOtp({ to, otp }) {
   const transporter = createTransporter();
 
