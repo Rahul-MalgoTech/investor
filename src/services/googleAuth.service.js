@@ -11,10 +11,15 @@ export async function verifyGoogleIdToken(idToken) {
     throw new ApiError(500, 'Google auth is not configured');
   }
 
-  const ticket = await client.verifyIdToken({
-    idToken,
-    audience: env.googleClientId,
-  });
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken,
+      audience: env.googleClientId,
+    });
+  } catch (_error) {
+    throw new ApiError(401, 'Invalid Google token');
+  }
 
   const payload = ticket.getPayload();
   if (!payload?.sub) {

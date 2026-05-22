@@ -10,14 +10,12 @@ dns.setDefaultResultOrder?.('ipv4first');
 let cachedGmailIpv4s;
 let cachedWorkingTransportLabel;
 
-const resendApiUrl = 'https://api.resend.com/emails';
-
 export function hasSmtpConfig() {
   return Boolean(env.smtp.host && env.smtp.user && env.smtp.pass);
 }
 
 export function hasEmailDeliveryConfig() {
-  return Boolean(env.email.resendApiKey || hasSmtpConfig());
+  return hasSmtpConfig();
 }
 
 function isGmailSmtp() {
@@ -26,7 +24,7 @@ function isGmailSmtp() {
 }
 
 function getSenderAddress() {
-  const from = String(env.email.from ?? env.smtp.from ?? '').trim();
+  const from = String(env.smtp.from ?? '').trim();
   if (!from || from.includes('investor.local')) {
     return env.smtp.user;
   }
@@ -164,43 +162,27 @@ function otpEmailPayload({ to, otp }) {
   };
 }
 
-async function sendWithResend(payload) {
-  const response = await fetch(resendApiUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.email.resendApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(12000),
-  });
-  const text = await response.text();
-  const body = text ? JSON.parse(text) : {};
-
-  if (!response.ok) {
-    logger.error('Failed to send email OTP with Resend', {
-      status: response.status,
-      body,
-    });
-    throw new ApiError(
-      503,
-      body?.message || 'Email OTP service is temporarily unavailable',
-    );
-  }
-
-  return body;
+export async function checkEmailDeliveryConnection() {
+  return checkSmtpConnection();
 }
 
-export async function checkEmailDeliveryConnection() {
-  if (env.email.resendApiKey) {
-    return {
-      ok: true,
-      provider: 'resend',
-      from: getSenderAddress(),
-    };
+async function sendWithSmtp(payload) {
+  let lastError;
+
+  for (const config of await transportConfigs()) {
+    const transporter = createTransporter(config.options);
+
+    try {
+      await transporter.sendMail(payload);
+      rememberWorkingTransport(config.label);
+      return;
+    } catch (error) {
+      lastError = error;
+      logger.error(`Failed to send email OTP on ${config.label}`, serializeSmtpError(error));
+    }
   }
 
-  return checkSmtpConnection();
+  throw new ApiError(503, 'Email OTP service is temporarily unavailable');
 }
 
 async function checkSmtpConnection() {
@@ -237,25 +219,5 @@ async function checkSmtpConnection() {
 export async function sendEmailOtp({ to, otp }) {
   const payload = otpEmailPayload({ to, otp });
 
-  if (env.email.resendApiKey) {
-    await sendWithResend(payload);
-    return;
-  }
-
-  let lastError;
-
-  for (const config of await transportConfigs()) {
-    const transporter = createTransporter(config.options);
-
-    try {
-      await transporter.sendMail(payload);
-      rememberWorkingTransport(config.label);
-      return;
-    } catch (error) {
-      lastError = error;
-      logger.error(`Failed to send email OTP on ${config.label}`, serializeSmtpError(error));
-    }
-  }
-
-  throw new ApiError(503, 'Email OTP service is temporarily unavailable');
+  await sendWithSmtp(payload);
 }

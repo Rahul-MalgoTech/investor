@@ -24,19 +24,17 @@ function asNumber(name, fallback) {
 
 const gmailUser = process.env.GMAIL_USER;
 const gmailPass = process.env.GMAIL_PASS;
+const emailUser = process.env.EMAIL_USER;
+const emailPass = process.env.EMAIL_PASS;
+const configuredSmtpUser = process.env.SMTP_USER ?? emailUser ?? gmailUser;
+const configuredSmtpPass = process.env.SMTP_PASS ?? emailPass ?? gmailPass;
 const smtpHost =
   process.env.SMTP_HOST ??
   process.env.EMAIL_HOST ??
-  (gmailUser || gmailPass ? 'smtp.gmail.com' : undefined);
-const smtpUser = process.env.SMTP_USER ?? process.env.EMAIL_USER ?? gmailUser;
-const smtpPass = process.env.SMTP_PASS ?? process.env.EMAIL_PASS ?? gmailPass;
+  (configuredSmtpUser || configuredSmtpPass ? 'smtp.gmail.com' : undefined);
+const smtpUser = configuredSmtpUser;
+const smtpPass = configuredSmtpPass;
 const smtpFrom =
-  process.env.SMTP_FROM ??
-  process.env.EMAIL_FROM ??
-  (smtpUser ? `Investor <${smtpUser}>` : 'Investor <no-reply@investor.local>');
-const emailFrom =
-  process.env.RESEND_FROM ??
-  process.env.EMAIL_FROM ??
   process.env.SMTP_FROM ??
   (smtpUser ? `Investor <${smtpUser}>` : 'Investor <no-reply@investor.local>');
 
@@ -63,10 +61,6 @@ export const env = {
     user: smtpUser,
     pass: smtpPass?.replaceAll(' ', ''),
     from: smtpFrom,
-  },
-  email: {
-    resendApiKey: process.env.RESEND_API_KEY,
-    from: emailFrom,
   },
   googleClientId: process.env.GOOGLE_CLIENT_ID,
 };

@@ -41,7 +41,7 @@ export async function requestEmailOtp(email) {
 
   return {
     message: 'Email OTP sent',
-    dummyOtp: env.nodeEnv === "production" ? undefined : otp,
+    dummyOtp: env.nodeEnv !== 'production' ? otp : undefined,
   };
 }
 
