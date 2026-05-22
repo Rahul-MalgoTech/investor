@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { notFoundHandler } from './middleware/notFoundHandler.js';
 import { authRouter } from './routes/auth.routes.js';
 import { homeContentRouter } from './routes/homeContent.routes.js';
+import { orderRouter } from './routes/order.routes.js';
 import { profileRouter } from './routes/profile.routes.js';
 import { uploadRouter } from './routes/upload.routes.js';
 
@@ -37,6 +38,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/profile', profileRouter);
+app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1', homeContentRouter);
 app.use('/api/v1', uploadRouter);
 
