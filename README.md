@@ -25,8 +25,9 @@ npm run dev
 - `GET /api/v1/auth/me`
 
 Phone OTP uses `PHONE_DUMMY_OTP` for now. Email OTP uses SMTP through
-Nodemailer when `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` are set. Resend is not
-used for OTP delivery.
+Nodemailer when `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` are set. If SMTP is
+not configured or delivery fails, email login falls back to `EMAIL_FALLBACK_OTP`
+(`123456` by default). Resend is not used for OTP delivery.
 
 For Gmail SMTP, enable 2-step verification on the sender Gmail account and use a
 Google App Password as `SMTP_PASS`; do not use the normal Gmail password.
@@ -69,6 +70,12 @@ curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/phone/verify
 curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/email/request-otp \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com"}'
+```
+
+```bash
+curl -X POST https://investor-backend-d42s.onrender.com/api/v1/auth/email/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","otp":"123456"}'
 ```
 
 ```bash

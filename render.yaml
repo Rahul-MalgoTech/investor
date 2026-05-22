@@ -21,6 +21,10 @@ services:
         value: "6"
       - key: PHONE_DUMMY_OTP
         value: "123456"
+      - key: EMAIL_FALLBACK_OTP
+        value: "123456"
+      - key: EMAIL_DELIVERY_TIMEOUT_MS
+        value: "8000"
       - key: CORS_ORIGIN
         sync: false
       - key: ADMIN_TOKEN

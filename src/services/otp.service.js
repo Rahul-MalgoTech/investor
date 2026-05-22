@@ -3,35 +3,51 @@ import {
   createOtpChallenge,
   findLatestActiveOtp,
 } from '../repositories/otp.repository.js';
-import { ApiError } from '../utils/apiError.js';
 import { logger } from '../utils/logger.js';
 import { generateOtp, getExpiryDate } from '../utils/otp.js';
 import { hasEmailDeliveryConfig, sendEmailOtp } from './email.service.js';
 
 const maxOtpAttempts = 5;
 
+async function createEmailFallbackOtp(email, reason) {
+  logger.warn(`Using fallback email OTP for ${email}: ${reason}`);
+  await createOtpChallenge({
+    channel: 'email',
+    destination: email,
+    otp: env.emailFallbackOtp,
+    expiresAt: getExpiryDate(env.otpTtlMinutes),
+  });
+
+  return {
+    message: 'Email OTP fallback generated. Use the fallback OTP to login.',
+    dummyOtp: env.nodeEnv !== 'production' ? env.emailFallbackOtp : undefined,
+  };
+}
+
+function sendEmailOtpWithTimeout({ to, otp }) {
+  return Promise.race([
+    sendEmailOtp({ to, otp }),
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('email delivery timed out'));
+      }, env.emailDeliveryTimeoutMs);
+    }),
+  ]);
+}
+
 export async function requestEmailOtp(email) {
   const otp = generateOtp(env.otpLength);
 
   if (!hasEmailDeliveryConfig()) {
-    if (env.nodeEnv === 'production') {
-      throw new ApiError(500, 'Email OTP service is not configured');
-    }
-
-    logger.warn(`Email delivery is not configured. Email OTP for ${email}: ${otp}`);
-    await createOtpChallenge({
-      channel: 'email',
-      destination: email,
-      otp,
-      expiresAt: getExpiryDate(env.otpTtlMinutes),
-    });
-    return {
-      message: 'Email OTP generated. Email delivery is not configured, so OTP was not emailed.',
-      dummyOtp: otp,
-    };
+    return createEmailFallbackOtp(email, 'email delivery is not configured');
   }
 
-  await sendEmailOtp({ to: email, otp });
+  try {
+    await sendEmailOtpWithTimeout({ to: email, otp });
+  } catch (error) {
+    return createEmailFallbackOtp(email, error.message ?? 'email delivery failed');
+  }
+
   await createOtpChallenge({
     channel: 'email',
     destination: email,

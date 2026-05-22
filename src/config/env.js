@@ -51,6 +51,9 @@ export const env = {
   otpTtlMinutes: asNumber('OTP_TTL_MINUTES', 10),
   otpLength: asNumber('OTP_LENGTH', 6),
   phoneDummyOtp: process.env.PHONE_DUMMY_OTP ?? '123456',
+  emailFallbackOtp:
+    process.env.EMAIL_FALLBACK_OTP ?? process.env.PHONE_DUMMY_OTP ?? '123456',
+  emailDeliveryTimeoutMs: asNumber('EMAIL_DELIVERY_TIMEOUT_MS', 8000),
   adminToken: process.env.ADMIN_TOKEN,
   smtp: {
     host: smtpHost,
