@@ -269,6 +269,11 @@
         </div>
         <label>Title <input data-field="title" /></label>
         <label>Size <input data-field="size" /></label>
+        <label>Document URL/base64 <input data-field="documentValue" placeholder="Upload a file or paste URL" /></label>
+        <input data-field="documentFileName" type="hidden" />
+        <input data-field="documentMimeType" type="hidden" />
+        <label>Upload document <input data-field="documentUpload" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,image/*,application/pdf" /></label>
+        <span data-file-state class="image-state"></span>
       </article>
     </template>
 

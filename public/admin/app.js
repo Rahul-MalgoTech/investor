@@ -147,7 +147,11 @@ document.querySelector('#addHighlightBtn').addEventListener('click', () => {
 });
 
 document.querySelector('#addDocumentBtn').addEventListener('click', () => {
-  activeDetail().documents.push({ title: 'New Document', size: '1.8MB' });
+  activeDetail().documents.push({
+    title: 'New Document',
+    size: '',
+    document: {},
+  });
   renderPlotDetail();
 });
 
@@ -420,6 +424,30 @@ function documentCard(item, index) {
   const card = nodes.documentTemplate.content.firstElementChild.cloneNode(true);
   setValue(card, 'title', item.title);
   setValue(card, 'size', item.size);
+  setValue(card, 'documentValue', fileValue(item.document));
+  setValue(card, 'documentFileName', item.document?.fileName || '');
+  setValue(card, 'documentMimeType', item.document?.mimeType || '');
+  card.querySelector('[data-file-state]').textContent = fileValue(item.document)
+    ? `Saved document${item.document?.fileName ? `: ${item.document.fileName}` : ''}`
+    : '';
+  card.querySelector('[data-field="documentUpload"]').addEventListener('change', async (event) => {
+    try {
+      const file = event.target.files[0];
+      if (!file) return;
+      setStatus('Uploading document');
+      const documentFile = await fileToDocument(file);
+      setValue(card, 'documentValue', fileValue(documentFile));
+      setValue(card, 'documentFileName', documentFile.fileName);
+      setValue(card, 'documentMimeType', documentFile.mimeType);
+      setValue(card, 'size', formatBytes(file.size));
+      card.querySelector('[data-file-state]').textContent = `Ready: ${file.name}`;
+      setStatus('Document ready. Save changes to publish.');
+    } catch (error) {
+      setStatus(error.message || 'Document upload failed');
+    } finally {
+      event.target.value = '';
+    }
+  });
   bindRemove(card, () => {
     detail().documents.splice(index, 1);
     renderPlotDetail();
@@ -594,6 +622,11 @@ function syncPlotDetailFromFields() {
   plotDetail.documents = [...nodes.documents.querySelectorAll('[data-kind="document"]')].map((card) => ({
     title: value(card, 'title'),
     size: value(card, 'size'),
+    document: fileFromValue(
+      value(card, 'documentValue'),
+      value(card, 'documentFileName'),
+      value(card, 'documentMimeType'),
+    ),
   }));
   plotDetail.nearbyTitle = nodes.nearbyTitle.value.trim();
   plotDetail.nearby = [...nodes.nearby.querySelectorAll('[data-kind="nearby"]')].map((card) => ({
@@ -858,6 +891,52 @@ function imageFromValue(rawValue) {
   }
   if (value.startsWith('/') || value.startsWith('http')) return { url: value };
   return { asset: value };
+}
+
+function fileValue(file) {
+  if (file?.base64) {
+    return `data:${file.mimeType || 'application/octet-stream'};base64,${file.base64}`;
+  }
+  return file?.url || '';
+}
+
+function fileFromValue(rawValue, fileName = '', forcedMimeType = '') {
+  const value = rawValue.trim();
+  if (!value) return {};
+  if (value.startsWith('data:')) {
+    const [meta, base64] = value.split(',');
+    const mimeType = forcedMimeType || meta.match(/^data:([^;]+)/)?.[1] || 'application/octet-stream';
+    return { base64, mimeType, fileName };
+  }
+  return { url: value, fileName, mimeType: forcedMimeType };
+}
+
+async function fileToDocument(file) {
+  const maxBytes = 5 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error('Document must be 5MB or smaller');
+  }
+  const dataUrl = await readFileAsDataUrl(file);
+  const [meta, base64] = String(dataUrl).split(',');
+  const mimeType = file.type || meta.match(/^data:([^;]+)/)?.[1] || 'application/octet-stream';
+  return {
+    base64,
+    mimeType,
+    fileName: file.name,
+    size: file.size,
+  };
+}
+
+function formatBytes(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '';
+  const units = ['B', 'KB', 'MB'];
+  let value = bytes;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)}${units[unitIndex]}`;
 }
 
 function value(card, field) {
