@@ -16,6 +16,8 @@ import { profileRouter } from './routes/profile.routes.js';
 import { uploadRouter } from './routes/upload.routes.js';
 
 export const app = express();
+app.set('trust proxy', 1);
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
 
