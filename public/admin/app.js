@@ -53,8 +53,14 @@ const detailFields = [
   'selectionButtonText',
   'selectionMapTitle',
   'selectionPlots',
+  'summaryScreenTitle',
   'summaryImage',
   'summarySelectedLabel',
+  'summaryStartsFromLabel',
+  'summaryEditionLabel',
+  'summarySelectedPlotsTitle',
+  'summaryPremiumTitle',
+  'summaryStandardTitle',
   'summaryPremiumPlots',
   'summaryStandardPlots',
   'summaryAgreementCopy',
@@ -63,10 +69,13 @@ const detailFields = [
   'summaryDocumentationTitle',
   'summaryRegistrationTitle',
   'summaryPaymentBreakdownTitle',
+  'summaryBreakdownTotalLabel',
+  'summaryTotalAmountTitle',
   'summaryTotalLabel',
   'summaryPremiumAmount',
   'summaryStandardAmount',
   'summaryTotalAmount',
+  'summaryEmiOptions',
   'summaryEmiButtonText',
   'summaryFullButtonText',
   'aboutMapImage',
@@ -295,8 +304,15 @@ function renderPlotDetail() {
       ].join('|'),
     )
     .join('\n');
+  nodes.summaryScreenTitle.value = plotDetail.summary.screenTitle || '';
   nodes.summaryImage.value = imageValue(plotDetail.summary.image);
   nodes.summarySelectedLabel.value = plotDetail.summary.selectedLabel || '';
+  nodes.summaryStartsFromLabel.value = plotDetail.summary.startsFromLabel || '';
+  nodes.summaryEditionLabel.value = plotDetail.summary.editionLabel || '';
+  nodes.summarySelectedPlotsTitle.value =
+    plotDetail.summary.selectedPlotsTitle || '';
+  nodes.summaryPremiumTitle.value = plotDetail.summary.premiumTitle || '';
+  nodes.summaryStandardTitle.value = plotDetail.summary.standardTitle || '';
   nodes.summaryPremiumPlots.value = (plotDetail.summary.premiumPlots || []).join('\n');
   nodes.summaryStandardPlots.value = (plotDetail.summary.standardPlots || []).join('\n');
   nodes.summaryAgreementCopy.value = plotDetail.summary.agreementCopy || '';
@@ -307,10 +323,23 @@ function renderPlotDetail() {
   nodes.summaryDocumentationTitle.value = plotDetail.summary.documentationTitle || '';
   nodes.summaryRegistrationTitle.value = plotDetail.summary.registrationTitle || '';
   nodes.summaryPaymentBreakdownTitle.value = plotDetail.summary.paymentBreakdownTitle || '';
+  nodes.summaryBreakdownTotalLabel.value =
+    plotDetail.summary.breakdownTotalLabel || '';
+  nodes.summaryTotalAmountTitle.value = plotDetail.summary.totalAmountTitle || '';
   nodes.summaryTotalLabel.value = plotDetail.summary.totalLabel || '';
   nodes.summaryPremiumAmount.value = plotDetail.summary.premiumAmount || '';
   nodes.summaryStandardAmount.value = plotDetail.summary.standardAmount || '';
   nodes.summaryTotalAmount.value = plotDetail.summary.totalAmount || '';
+  nodes.summaryEmiOptions.value = (plotDetail.summary.emiOptions || [])
+    .map((option) =>
+      [
+        option.title || option.months || '',
+        option.badge || '',
+        option.amount || '',
+        option.selected ? 'selected' : '',
+      ].join('|'),
+    )
+    .join('\n');
   nodes.summaryEmiButtonText.value = plotDetail.summary.emiButtonText || '';
   nodes.summaryFullButtonText.value = plotDetail.summary.fullButtonText || '';
 
@@ -573,10 +602,14 @@ function syncPlotDetailFromFields() {
   };
 
   plotDetail.summary = {
+    screenTitle: nodes.summaryScreenTitle.value.trim(),
     image: imageFromValue(nodes.summaryImage.value),
     selectedLabel: nodes.summarySelectedLabel.value.trim(),
-    premiumTitle: 'Selected Plots:',
-    standardTitle: '',
+    startsFromLabel: nodes.summaryStartsFromLabel.value.trim(),
+    editionLabel: nodes.summaryEditionLabel.value.trim(),
+    selectedPlotsTitle: nodes.summarySelectedPlotsTitle.value.trim(),
+    premiumTitle: nodes.summaryPremiumTitle.value.trim(),
+    standardTitle: nodes.summaryStandardTitle.value.trim(),
     premiumPlots: lines(nodes.summaryPremiumPlots.value),
     standardPlots: lines(nodes.summaryStandardPlots.value),
     agreementCopy: nodes.summaryAgreementCopy.value.trim(),
@@ -591,10 +624,26 @@ function syncPlotDetailFromFields() {
     documentationTitle: nodes.summaryDocumentationTitle.value.trim(),
     registrationTitle: nodes.summaryRegistrationTitle.value.trim(),
     paymentBreakdownTitle: nodes.summaryPaymentBreakdownTitle.value.trim(),
+    breakdownTotalLabel: nodes.summaryBreakdownTotalLabel.value.trim(),
+    totalAmountTitle: nodes.summaryTotalAmountTitle.value.trim(),
     totalLabel: nodes.summaryTotalLabel.value.trim(),
     premiumAmount: nodes.summaryPremiumAmount.value.trim(),
     standardAmount: nodes.summaryStandardAmount.value.trim(),
     totalAmount: nodes.summaryTotalAmount.value.trim(),
+    emiOptions: lines(nodes.summaryEmiOptions.value).map((line) => {
+      const [title, badge, amount, selected] = line.split('|');
+      const monthCount = Number.parseInt(
+        (title || '').replace(/[^0-9]/g, ''),
+        10,
+      );
+      return {
+        title: title?.trim() || '',
+        months: Number.isNaN(monthCount) ? 0 : monthCount,
+        badge: badge?.trim() || '',
+        amount: amount?.trim() || '',
+        selected: selected?.trim().toLowerCase() === 'selected',
+      };
+    }),
     emiButtonText: nodes.summaryEmiButtonText.value.trim(),
     fullButtonText: nodes.summaryFullButtonText.value.trim(),
   };
@@ -704,6 +753,7 @@ function normalizeNestedDetail(plotDetail) {
   plotDetail.summary.premiumPlots ||= [];
   plotDetail.summary.standardPlots ||= [];
   plotDetail.summary.paymentRules ||= [];
+  plotDetail.summary.emiOptions ||= [];
   plotDetail.about ||= {};
   plotDetail.about.info ||= [];
   plotDetail.about.amenities ||= [];
