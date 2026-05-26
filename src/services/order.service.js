@@ -1,4 +1,5 @@
 import { Order } from '../models/order.model.js';
+import { createNotification } from './notification.service.js';
 
 export async function createOrder(payload, userId) {
   const order = await Order.create({
@@ -6,7 +7,21 @@ export async function createOrder(payload, userId) {
     userId,
     status: 'confirmed',
   });
-  return order.toJSON();
+  const json = order.toJSON();
+
+  await createNotification({
+    userId,
+    type: 'booking',
+    title: 'Booking Confirmed',
+    body: `${payload.plot?.title || 'Your selected plot'} has been successfully reserved.`,
+    metadata: {
+      orderId: json._id?.toString() ?? json.id,
+      plotTitle: payload.plot?.title,
+      paymentMode: payload.summary?.paymentMode,
+    },
+  });
+
+  return json;
 }
 
 export async function listOrders(userId) {
